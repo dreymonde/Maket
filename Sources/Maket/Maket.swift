@@ -29,7 +29,7 @@ public extension CGPoint {
 }
 
 public extension CGContext {
-    func place<LayoutArea: CGLayoutArea>(_ layoutObject: CGLayoutObject, relativeTo area: LayoutArea, from anchor: LayoutArea.Anchor, vector: CGVector) {
+    func place<LayoutArea: CGLayoutArea>(_ layoutObject: CGLayoutObject & CGPlaceable, relativeTo area: LayoutArea, from anchor: LayoutArea.Anchor, vector: CGVector) {
         let finalPoint = layoutObject.placePoint(relativeTo: area, from: anchor, vector: vector)
         layoutObject.place(on: self, at: finalPoint)
     }

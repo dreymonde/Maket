@@ -1,31 +1,7 @@
 import CoreGraphics
 import CoreText
 
-extension CGSize: CGLayoutObject {
-    public var size: CGSize {
-        return self
-    }
-    public func place(on context: CGContext, at point: CGPoint) {
-        let rect = CGRect(origin: point, size: self)
-        context.addRect(rect)
-    }
-}
-
-fileprivate struct CGSize_Ellipse: CGLayoutObject {
-    let size: CGSize
-    func place(on context: CGContext, at point: CGPoint) {
-        let rect = CGRect(origin: point, size: size)
-        context.addEllipse(in: rect)
-    }
-}
-
-public extension CGSize {
-    var ellipse: CGLayoutObject {
-        return CGSize_Ellipse(size: self)
-    }
-}
-
-extension CTLine: CGLayoutObject {
+extension CTLine: CGLayoutObject, CGPlaceable {
     public var size: CGSize {
         return CTLineGetImageBounds(self, nil).size
     }
@@ -35,13 +11,19 @@ extension CTLine: CGLayoutObject {
     }
 }
 
-extension CGImage: CGLayoutObject {
+extension CGImage: CGLayoutObject, CGPlaceable {
     public var size: CGSize {
         return CGSize(width: width, height: height)
     }
     public func place(on context: CGContext, at point: CGPoint) {
         let rect = CGRect(origin: point, size: size)
         context.draw(self, in: rect)
+    }
+}
+
+extension CGSize: CGLayoutObject {
+    public var size: CGSize {
+        return self
     }
 }
 
@@ -71,3 +53,30 @@ public extension CGImage {
         return self.scaled(to: newSize)
     }
 }
+
+public struct CGCustomFigure {
+    public let placing: (CGContext, CGSize, CGPoint) -> ()
+    public init(placing: @escaping (CGContext, CGSize, CGPoint) -> ()) {
+        self.placing = placing
+    }
+    public static func rectBased(placing: @escaping (CGContext, CGRect) -> ()) -> CGCustomFigure {
+        return CGCustomFigure(placing: { (context, size, point) in
+            let rect = CGRect(origin: point, size: size)
+            placing(context, rect)
+        })
+    }
+    public func ofSize(_ size: CGSize) -> CGLayoutObject {
+        return CGSizedCustomFigure(size: size, placing: { (context, point) in
+            self.placing(context, size, point)
+        })
+    }
+}
+
+fileprivate struct CGSizedCustomFigure: CGLayoutObject, CGPlaceable {
+    public let size: CGSize
+    public let placing: (CGContext, CGPoint) -> ()
+    public func place(on context: CGContext, at point: CGPoint) {
+        placing(context, point)
+    }
+}
+
